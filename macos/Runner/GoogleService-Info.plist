@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyDpzuEOQO7uUywghbOUEr-mrgMwvtrc1Jo</string>
+	<key>GCM_SENDER_ID</key>
+	<string>172619530438</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.uiTests.RunnerTests</string>
+	<key>PROJECT_ID</key>
+	<string>weddinginvitations-5a9db</string>
+	<key>STORAGE_BUCKET</key>
+	<string>weddinginvitations-5a9db.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:172619530438:ios:155723978d2ec19dcb97c7</string>
+</dict>
+</plist>
