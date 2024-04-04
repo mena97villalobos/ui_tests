@@ -1,116 +1,52 @@
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'dart:ui';
 
-class DrawWidget extends StatefulWidget {
-  const DrawWidget({super.key});
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:uuid/uuid.dart';
+
+class DrawingBoard extends StatefulWidget {
+  final String colorSelectionCTA;
+  final String saveColorCTA;
+  final String userName;
+  final String drawingSharedMessage;
+
+  const DrawingBoard({
+    super.key,
+    required this.colorSelectionCTA,
+    required this.saveColorCTA,
+    required this.userName,
+    required this.drawingSharedMessage,
+  });
 
   @override
-  DrawState createState() => DrawState();
+  _DrawingBoardState createState() => _DrawingBoardState();
 }
 
-class DrawState extends State<DrawWidget> {
-  Color selectedColor = Colors.black;
-  Color pickerColor = Colors.black;
+class _DrawingBoardState extends State<DrawingBoard> {
+  GlobalKey drawingBoardKey = GlobalKey();
+  Color selectedColor = Colors.white;
+  Color pickerColor = Colors.white;
   double strokeWidth = 3.0;
   int strokeCount = 0;
   int testVal = 0;
   List<List<DrawingPoints>> drawablePoints = List.empty(growable: true);
-  StrokeCap strokeCap = (Platform.isAndroid) ? StrokeCap.butt : StrokeCap.round;
+  StrokeCap strokeCap = StrokeCap.round;
   SelectedMode selectedMode = SelectedMode.none;
   List<Color> colors = [
     Colors.red,
     Colors.green,
     Colors.blue,
-    Colors.amber,
+    Colors.white,
     Colors.black
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white10,
-      appBar: AppBar(
-        title: const Text("Guess the Wedding Dress!"),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Container(
-            padding: const EdgeInsets.only(left: 8.0, right: 8.0),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(50.0),
-              color: Colors.black,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      IconButton(
-                          icon: const Icon(Icons.album),
-                          onPressed: () {
-                            setState(() {
-                              if (selectedMode == SelectedMode.strokeWidth) {
-                                selectedMode = SelectedMode.none;
-                              } else {
-                                selectedMode = SelectedMode.strokeWidth;
-                              }
-                            });
-                          }),
-                      IconButton(
-                          icon: const Icon(Icons.color_lens),
-                          onPressed: () {
-                            setState(() {
-                              if (selectedMode == SelectedMode.color) {
-                                selectedMode = SelectedMode.none;
-                              } else {
-                                selectedMode = SelectedMode.color;
-                              }
-                            });
-                          }),
-                      IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            setState(() {
-                              selectedMode = SelectedMode.none;
-                              drawablePoints.clear();
-                              strokeCount = 0;
-                            });
-                          }),
-                    ],
-                  ),
-                  Visibility(
-                    visible: selectedMode != SelectedMode.none,
-                    child: (selectedMode == SelectedMode.color)
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: _getColorList(),
-                          )
-                        : Slider(
-                            value: strokeWidth,
-                            max: 5.0,
-                            min: 0.0,
-                            onChanged: (val) {
-                              setState(() {
-                                strokeWidth = val;
-                              });
-                            }),
-                  ),
-                ],
-              ),
-            )),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/common/dress_template.png"),
-            fit: BoxFit.contain,
-          ),
-        ),
-        child: GestureDetector(
+    return Stack(
+      children: [
+        GestureDetector(
           onPanEnd: (details) {
             setState(() {
               strokeCount++;
@@ -149,12 +85,132 @@ class DrawState extends State<DrawWidget> {
             });
           },
           child: CustomPaint(
+            key: drawingBoardKey,
             size: Size.infinite,
             painter: DrawingPainter(drawablePoints),
           ),
         ),
-      ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Container(
+              padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(50.0),
+                color: Colors.black,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        IconButton(
+                            color: Colors.white,
+                            icon: const Icon(Icons.album),
+                            onPressed: () {
+                              setState(() {
+                                if (selectedMode == SelectedMode.strokeWidth) {
+                                  selectedMode = SelectedMode.none;
+                                } else {
+                                  selectedMode = SelectedMode.strokeWidth;
+                                }
+                              });
+                            }),
+                        IconButton(
+                            color: Colors.white,
+                            icon: const Icon(Icons.color_lens),
+                            onPressed: () {
+                              setState(() {
+                                if (selectedMode == SelectedMode.color) {
+                                  selectedMode = SelectedMode.none;
+                                } else {
+                                  selectedMode = SelectedMode.color;
+                                }
+                              });
+                            }),
+                        IconButton(
+                            color: Colors.white,
+                            icon: const Icon(Icons.undo),
+                            onPressed: () {
+                              setState(() {
+                                // Undo
+                                selectedMode = SelectedMode.none;
+                                drawablePoints[strokeCount].clear();
+                              });
+                            }),
+                        IconButton(
+                            color: Colors.white,
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                selectedMode = SelectedMode.none;
+                                drawablePoints.clear();
+                                strokeCount = 0;
+                              });
+                            }),
+                        IconButton(
+                            color: Colors.white,
+                            icon: const Icon(Icons.save),
+                            onPressed: () {
+                              setState(() {
+                                selectedMode = SelectedMode.none;
+                                _saveDrawing().then(
+                                  (value) => ScaffoldMessenger.of(context)
+                                      .showSnackBar(
+                                    SnackBar(
+                                      content:
+                                          Text(widget.drawingSharedMessage),
+                                    ),
+                                  ),
+                                );
+                              });
+                            }),
+                      ],
+                    ),
+                    Visibility(
+                      visible: selectedMode != SelectedMode.none,
+                      child: (selectedMode == SelectedMode.color)
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: _getColorList(),
+                            )
+                          : Slider(
+                              value: strokeWidth,
+                              max: 5.0,
+                              min: 0.0,
+                              onChanged: (val) {
+                                setState(() {
+                                  strokeWidth = val;
+                                });
+                              }),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
+  }
+
+  Future<UploadTask> _saveDrawing() async {
+    const uuid = Uuid();
+    final fileName = "${widget.userName}-${uuid.v4()}.png";
+
+    final boundary = drawingBoardKey.currentContext!.findRenderObject()
+        as RenderRepaintBoundary;
+    final image = await boundary.toImage();
+    final byteData = await image.toByteData(format: ImageByteFormat.png);
+    final pngBytes = byteData!.buffer.asUint8List();
+    final storageRef =
+        FirebaseStorage.instance.ref("games/guess-dress/$fileName");
+    storageRef.child(fileName);
+    return storageRef.putData(pngBytes);
   }
 
   List<Widget> _getColorList() {
@@ -168,7 +224,7 @@ class DrawState extends State<DrawWidget> {
           context: context,
           builder: (BuildContext ctx) {
             return AlertDialog(
-              title: const Text('Pick a color!'),
+              title: Text(widget.colorSelectionCTA),
               content: SingleChildScrollView(
                 child: ColorPicker(
                   pickerColor: pickerColor,
@@ -180,7 +236,7 @@ class DrawState extends State<DrawWidget> {
               ),
               actions: <Widget>[
                 OutlinedButton(
-                  child: const Text('Save'),
+                  child: Text(widget.saveColorCTA),
                   onPressed: () {
                     setState(() => selectedColor = pickerColor);
                     Navigator.of(context).pop();

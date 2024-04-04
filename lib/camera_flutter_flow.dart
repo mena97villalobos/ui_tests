@@ -1,13 +1,26 @@
-import 'dart:io';
+// Automatic FlutterFlow imports
+// import '/backend/backend.dart';
+// import '/backend/schema/structs/index.dart';
+// import '/flutter_flow/flutter_flow_theme.dart';
+// import '/flutter_flow/flutter_flow_util.dart';
+// import '/custom_code/widgets/index.dart'; // Imports other custom widgets
+// import '/custom_code/actions/index.dart'; // Imports custom actions
+// import '/flutter_flow/custom_functions.dart'; // Imports custom functions
+import 'package:flutter/material.dart';
+// Begin custom widget code
+// DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
 import 'package:camera/camera.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:ui_tests/local_notifications_service.dart';
+import 'dart:io';
+import 'dart:async';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:uuid/uuid.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class TakePictureScreen extends StatefulWidget {
+
   final String username;
   final String notificationTitle;
   final String notificationCTA;
@@ -18,6 +31,8 @@ class TakePictureScreen extends StatefulWidget {
 
   const TakePictureScreen({
     super.key,
+    this.width,
+    this.height,
     required this.username,
     required this.notificationTitle,
     required this.notificationCTA,
@@ -27,8 +42,11 @@ class TakePictureScreen extends StatefulWidget {
     required this.snackbarMessage,
   });
 
+  final double? width;
+  final double? height;
+
   @override
-  _TakePictureScreenState createState() => _TakePictureScreenState();
+  State<TakePictureScreen> createState() => _TakePictureScreenState();
 }
 
 class _TakePictureScreenState extends State<TakePictureScreen> {
@@ -53,12 +71,7 @@ class _TakePictureScreenState extends State<TakePictureScreen> {
 
   Future _initCamera() async {
     final cameras = await availableCameras();
-    _controller = CameraController(
-        cameras.firstWhere(
-            (camera) => camera.lensDirection == CameraLensDirection.back,
-            orElse: () => cameras.first),
-        ResolutionPreset.max,
-    );
+    _controller = CameraController(cameras.first, ResolutionPreset.max);
     return await _controller.initialize();
   }
 
@@ -156,9 +169,9 @@ class DisplayPictureScreen extends StatelessWidget {
                     _saveImage(image)
                         .then(
                           (_) => ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(snackbarMessage)),
-                          ),
-                        )
+                        SnackBar(content: Text(snackbarMessage)),
+                      ),
+                    )
                         .then((value) => Navigator.of(context).pop());
                   },
                   label: Text(submitCTA),
@@ -181,8 +194,7 @@ class DisplayPictureScreen extends StatelessWidget {
 
   Future<UploadTask> _saveImage(XFile image) async {
     var uuid = const Uuid();
-    final storageRef =
-        FirebaseStorage.instance.ref("images/$username-${uuid.v4()}.png");
+    final storageRef = FirebaseStorage.instance.ref("images/$username-${uuid.v4()}.png");
     storageRef.child(image.name);
     if (kIsWeb) {
       return image.readAsBytes().then((value) => storageRef.putData(value));
@@ -197,5 +209,73 @@ class DisplayPictureScreen extends StatelessWidget {
     } else {
       return Image.file(File(path));
     }
+  }
+}
+
+class LocalNotificationService {
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+  FlutterLocalNotificationsPlugin();
+
+  Future<void> init() async {
+    FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+    flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+    const AndroidInitializationSettings initializationSettingsAndroid =
+    AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    // Initialize native Ios Notifications
+    const DarwinInitializationSettings initializationSettingsIOS =
+    DarwinInitializationSettings();
+
+    const InitializationSettings initializationSettings =
+    InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
+
+    await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+    );
+  }
+
+  void showNotificationAndroid(String title, String value) async {
+    const AndroidNotificationDetails androidNotificationDetails =
+    AndroidNotificationDetails('channel_id', 'Wedding Invitation',
+        channelDescription: 'Wedding Invitation',
+        importance: Importance.max,
+        priority: Priority.high,
+        ticker: 'ticker');
+
+    int notificationId = 1;
+    const NotificationDetails notificationDetails =
+    NotificationDetails(android: androidNotificationDetails);
+
+    await flutterLocalNotificationsPlugin.show(
+        notificationId, title, value, notificationDetails,
+        payload: 'Not present');
+  }
+
+  void showNotificationIos(String title, String value) async {
+    const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+    DarwinNotificationDetails(
+      presentAlert: true,
+      // Present an alert when the notification is displayed and the application is in the foreground (only from iOS 10 onwards)
+      presentBadge: true,
+      // Present the badge number when the notification is displayed and the application is in the foreground (only from iOS 10 onwards)
+      presentSound:
+      true, // Play a sound when the notification is displayed and the application is in the foreground (only from iOS 10 onwards)
+    );
+
+    int notificationId = 1;
+
+    const NotificationDetails platformChannelSpecifics =
+    NotificationDetails(iOS: iOSPlatformChannelSpecifics);
+
+    await flutterLocalNotificationsPlugin.show(
+        notificationId, title, value, platformChannelSpecifics,
+        payload: 'Not present');
   }
 }
