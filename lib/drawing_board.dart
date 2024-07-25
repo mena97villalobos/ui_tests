@@ -1,9 +1,10 @@
 import 'dart:ui';
 
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:screenshot/screenshot.dart';
 import 'package:uuid/uuid.dart';
 
 class DrawingBoard extends StatefulWidget {
@@ -25,12 +26,13 @@ class DrawingBoard extends StatefulWidget {
 }
 
 class _DrawingBoardState extends State<DrawingBoard> {
-  GlobalKey drawingBoardKey = GlobalKey();
-  Color selectedColor = Colors.white;
-  Color pickerColor = Colors.white;
-  double strokeWidth = 3.0;
-  int strokeCount = 0;
-  int testVal = 0;
+  final _drawingBoardKey = GlobalKey();
+  Color _selectedColor = Colors.white;
+  Color _pickerColor = Colors.white;
+  double _strokeWidth = 3.0;
+  int _strokeCount = 0;
+  final _screenShotController = ScreenshotController();
+
   List<List<DrawingPoints>> drawablePoints = List.empty(growable: true);
   StrokeCap strokeCap = StrokeCap.round;
   SelectedMode selectedMode = SelectedMode.none;
@@ -49,21 +51,20 @@ class _DrawingBoardState extends State<DrawingBoard> {
         GestureDetector(
           onPanEnd: (details) {
             setState(() {
-              strokeCount++;
+              _strokeCount++;
             });
           },
           onPanUpdate: (details) {
             setState(() {
               RenderBox renderBox = context.findRenderObject() as RenderBox;
-              testVal++;
-              drawablePoints[strokeCount].add(
+              drawablePoints[_strokeCount].add(
                 DrawingPoints(
                   renderBox.globalToLocal(details.globalPosition),
                   Paint()
                     ..strokeCap = strokeCap
                     ..isAntiAlias = true
-                    ..color = selectedColor
-                    ..strokeWidth = strokeWidth,
+                    ..color = _selectedColor
+                    ..strokeWidth = _strokeWidth,
                 ),
               );
             });
@@ -72,22 +73,25 @@ class _DrawingBoardState extends State<DrawingBoard> {
             setState(() {
               RenderBox renderBox = context.findRenderObject() as RenderBox;
               drawablePoints.add(List.empty(growable: true));
-              drawablePoints[strokeCount].add(
+              drawablePoints[_strokeCount].add(
                 DrawingPoints(
                   renderBox.globalToLocal(details.globalPosition),
                   Paint()
                     ..strokeCap = strokeCap
                     ..isAntiAlias = true
-                    ..color = selectedColor
-                    ..strokeWidth = strokeWidth,
+                    ..color = _selectedColor
+                    ..strokeWidth = _strokeWidth,
                 ),
               );
             });
           },
-          child: CustomPaint(
-            key: drawingBoardKey,
-            size: Size.infinite,
-            painter: DrawingPainter(drawablePoints),
+          child: Screenshot(
+            controller: _screenShotController,
+            child: CustomPaint(
+              key: _drawingBoardKey,
+              size: Size.infinite,
+              painter: DrawingPainter(drawablePoints),
+            ),
           ),
         ),
         Align(
@@ -133,15 +137,18 @@ class _DrawingBoardState extends State<DrawingBoard> {
                               });
                             }),
                         IconButton(
-                            color: Colors.white,
-                            icon: const Icon(Icons.undo),
-                            onPressed: () {
-                              setState(() {
-                                // Undo
-                                selectedMode = SelectedMode.none;
-                                drawablePoints[strokeCount].clear();
-                              });
-                            }),
+                          color: Colors.white,
+                          icon: const Icon(Icons.undo),
+                          onPressed: _strokeCount > 0
+                              ? () {
+                                  setState(() {
+                                    // Undo
+                                    selectedMode = SelectedMode.none;
+                                    drawablePoints.removeAt(--_strokeCount);
+                                  });
+                                }
+                              : null,
+                        ),
                         IconButton(
                             color: Colors.white,
                             icon: const Icon(Icons.clear),
@@ -149,7 +156,7 @@ class _DrawingBoardState extends State<DrawingBoard> {
                               setState(() {
                                 selectedMode = SelectedMode.none;
                                 drawablePoints.clear();
-                                strokeCount = 0;
+                                _strokeCount = 0;
                               });
                             }),
                         IconButton(
@@ -179,12 +186,12 @@ class _DrawingBoardState extends State<DrawingBoard> {
                               children: _getColorList(),
                             )
                           : Slider(
-                              value: strokeWidth,
+                              value: _strokeWidth,
                               max: 5.0,
                               min: 0.0,
                               onChanged: (val) {
                                 setState(() {
-                                  strokeWidth = val;
+                                  _strokeWidth = val;
                                 });
                               }),
                     ),
@@ -198,14 +205,10 @@ class _DrawingBoardState extends State<DrawingBoard> {
     );
   }
 
-  Future<UploadTask> _saveDrawing() async {
+  Future _saveDrawing() async {
     const uuid = Uuid();
     final fileName = "${widget.userName}-${uuid.v4()}.png";
-
-    final boundary = drawingBoardKey.currentContext!.findRenderObject()
-        as RenderRepaintBoundary;
-    final image = await boundary.toImage();
-    final byteData = await image.toByteData(format: ImageByteFormat.png);
+    final byteData = await _screenShotController.capture();
     final pngBytes = byteData!.buffer.asUint8List();
     final storageRef =
         FirebaseStorage.instance.ref("games/guess-dress/$fileName");
@@ -227,9 +230,9 @@ class _DrawingBoardState extends State<DrawingBoard> {
               title: Text(widget.colorSelectionCTA),
               content: SingleChildScrollView(
                 child: ColorPicker(
-                  pickerColor: pickerColor,
+                  pickerColor: _pickerColor,
                   onColorChanged: (color) {
-                    pickerColor = color;
+                    _pickerColor = color;
                   },
                   pickerAreaHeightPercent: 0.8,
                 ),
@@ -238,7 +241,7 @@ class _DrawingBoardState extends State<DrawingBoard> {
                 OutlinedButton(
                   child: Text(widget.saveColorCTA),
                   onPressed: () {
-                    setState(() => selectedColor = pickerColor);
+                    setState(() => _selectedColor = _pickerColor);
                     Navigator.of(context).pop();
                   },
                 ),
@@ -269,7 +272,7 @@ class _DrawingBoardState extends State<DrawingBoard> {
     return GestureDetector(
       onTap: () {
         setState(() {
-          selectedColor = color;
+          _selectedColor = color;
         });
       },
       child: ClipOval(

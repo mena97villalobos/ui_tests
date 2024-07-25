@@ -1,99 +1,103 @@
+// Automatic FlutterFlow imports
+import 'package:ui_tests/wedding_rule_element_struct.dart';
+
+import '/flutter_flow/flutter_flow_theme.dart';
 import 'package:flutter/material.dart';
+// Begin custom widget code
+// DO NOT REMOVE OR MODIFY THE CODE ABOVE!
+
 import 'package:timelines/timelines.dart';
 
-class WeddingRulesList extends StatelessWidget {
-  const WeddingRulesList({Key? key, required this.rules}) : super(key: key);
+class WeddingRulesTimeline extends StatefulWidget {
+  const WeddingRulesTimeline({
+    super.key,
+    this.width,
+    this.height,
+    required this.rules,
+  });
 
-  final List<WeddingRules> rules;
+  final double? width;
+  final double? height;
+  final List<WeddingRuleElementStruct> rules;
+
+  @override
+  State<WeddingRulesTimeline> createState() => _WeddingRulesTimelineState();
+}
+
+class _WeddingRulesTimelineState extends State<WeddingRulesTimeline> {
+  List<IconData> icons = [
+    Icons.no_stroller,
+    Icons.checkroom,
+    Icons.color_lens,
+    Icons.church_outlined,
+    Icons.airport_shuttle
+  ];
 
   @override
   Widget build(BuildContext context) {
     return DefaultTextStyle(
-      style: const TextStyle(
-        color: Color(0xff9b9b9b),
+      style: FlutterFlowTheme.of(context).headlineSmall.override(
+        color: FlutterFlowTheme.of(context).accent2,
         fontSize: 12.5,
+        letterSpacing: 0.0,
+        useGoogleFonts: false,
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: FixedTimeline.tileBuilder(
           theme: TimelineThemeData(
             nodePosition: 0,
-            color: const Color(0xff989898),
+            color: FlutterFlowTheme.of(context).accent2,
             indicatorTheme: const IndicatorThemeData(
               position: 0,
-              size: 52.0,
+              size: 100.0,
             ),
             connectorTheme: const ConnectorThemeData(
-              thickness: 8,
+              thickness: 10,
             ),
           ),
           builder: TimelineTileBuilder.connected(
             connectionDirection: ConnectionDirection.after,
-            itemCount: rules.length,
+            itemCount: widget.rules.length,
             contentsBuilder: (_, index) {
               return Padding(
-                padding: const EdgeInsetsDirectional.only(
-                  start: 16,
-                  end: 16,
-                  bottom: 16,
-                ),
+                  padding: const EdgeInsets.only(left: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      rules[index].title,
-                      style: DefaultTextStyle.of(context).style.copyWith(
-                        fontSize: 18.0,
+                      widget.rules[index].title,
+                      style: FlutterFlowTheme.of(context).headlineSmall.override(
+                        useGoogleFonts: false,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
-                      rules[index].description,
-                      style: DefaultTextStyle.of(context).style.copyWith(
-                          fontSize: 12.0, fontStyle: FontStyle.italic),
+                      widget.rules[index].description,
+                      style: FlutterFlowTheme.of(context).bodyMedium.override(
+                        useGoogleFonts: false,
+                        fontFamily:
+                        FlutterFlowTheme.of(context).displayLargeFamily,
+                      ),
                     ),
+                    const SizedBox(height: 25),
                   ],
                 ),
               );
             },
-            indicatorBuilder: (_, index) => const DotIndicator(
-              color: Color(0xffE5B80B),
+            indicatorBuilder: (_, index) => OutlinedDotIndicator(
+              color: FlutterFlowTheme.of(context).primary,
               child: Icon(
-                Icons.church_outlined,
-                size: 36.0,
+                color: FlutterFlowTheme.of(context).primary,
+                icons[index],
+                size: 22.0,
               ),
             ),
             connectorBuilder: (_, index, ___) =>
-            const SolidLineConnector(color: Color(0xffE5B80B)),
+                SolidLineConnector(color: FlutterFlowTheme.of(context).primary, thickness: 3,),
           ),
         ),
       ),
     );
   }
-}
-
-List<WeddingRules> _data() => [
-  WeddingRules(
-    'Package Process',
-    'This is a really long text testing the timeline behavior could be good or could look horrible',
-  ),
-  WeddingRules(
-    'In Transit',
-    'This is a really long text testing the timeline behavior could be good or could look horrible',
-  ),
-  WeddingRules(
-    'In Transit',
-    'This is a really long text testing the timeline behavior could be good or could look horrible',
-  ),
-  WeddingRules(
-    'Completed',
-    'This is a really long text testing the timeline behavior could be good or could look horrible',
-  ),
-];
-
-class WeddingRules {
-  final String title;
-  final String description;
-
-  WeddingRules(this.title, this.description);
 }
